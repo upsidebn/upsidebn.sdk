@@ -1,0 +1,8 @@
+{
+  "name": "nrn-webserial-example",
+  "private": true,
+  "type": "module",
+  "dependencies": {
+    "@nextwaves/nrn-sdk": "file:../../sdk/nation/webserial"
+  }
+}

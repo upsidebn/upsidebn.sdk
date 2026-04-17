@@ -1,0 +1,11 @@
+Checks: >
+  bugprone-*,
+  cert-*,
+  clang-analyzer-*,
+  cppcoreguidelines-*,
+  modernize-*,
+  performance-*,
+  readability-*,
+  -cppcoreguidelines-avoid-magic-numbers,
+  -readability-identifier-length
+WarningsAsErrors: "bugprone-*,cert-*,clang-analyzer-*"

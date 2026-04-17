@@ -1,0 +1,64 @@
+{
+  "todo": "Converge all SDKs on a single CRC implementation in v1.1.0. Python and TypeScript currently use polynomial 0x1021 with init 0x0000, while Rust, Go, and C++ currently use polynomial 0x8005 with init 0x0000. The CCITT-FALSE reference vector is included for audit only and should not fail v1.0.0 tests.",
+  "crc_poly_1021_init_0000": [
+    {
+      "name": "empty",
+      "input_hex": "",
+      "expected_crc_hex": "0000"
+    },
+    {
+      "name": "ascii_123456789",
+      "input_hex": "313233343536373839",
+      "expected_crc_hex": "31C3"
+    },
+    {
+      "name": "query_info_frame_body",
+      "input_hex": "000101000000",
+      "expected_crc_hex": "DCE5"
+    },
+    {
+      "name": "read_epc_tag_frame_body",
+      "input_hex": "0001021000050000000101",
+      "expected_crc_hex": "F487"
+    },
+    {
+      "name": "tag_notification_frame_body",
+      "input_hex": "00011210001600083000112233445566300001018008000E0BD40940",
+      "expected_crc_hex": "B44F"
+    }
+  ],
+  "crc_poly_8005_init_0000": [
+    {
+      "name": "empty",
+      "input_hex": "",
+      "expected_crc_hex": "0000"
+    },
+    {
+      "name": "ascii_123456789",
+      "input_hex": "313233343536373839",
+      "expected_crc_hex": "FEE8"
+    },
+    {
+      "name": "query_info_frame_body",
+      "input_hex": "000101000000",
+      "expected_crc_hex": "1478"
+    },
+    {
+      "name": "read_epc_tag_frame_body",
+      "input_hex": "0001021000050000000101",
+      "expected_crc_hex": "F2B2"
+    },
+    {
+      "name": "tag_notification_frame_body",
+      "input_hex": "00011210001600083000112233445566300001018008000E0BD40940",
+      "expected_crc_hex": "B252"
+    }
+  ],
+  "ccitt_false_reference": [
+    {
+      "name": "ascii_123456789",
+      "input_hex": "313233343536373839",
+      "expected_crc_hex": "29B1"
+    }
+  ]
+}

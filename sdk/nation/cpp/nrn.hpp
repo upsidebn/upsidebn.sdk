@@ -1,8 +1,8 @@
 /**
  * Nation RFID Reader SDK for C++
- * 
+ *
  * A comprehensive serial communication SDK for NRN RFID readers.
- * 
+ *
  * @version 1.0.0
  * @author Nextwaves
  */
@@ -11,16 +11,18 @@
 #define NRN_SDK_HPP
 
 #include <cstdint>
-#include <string>
-#include <vector>
 #include <functional>
 #include <map>
-#include <optional>
 #include <memory>
+#include <optional>
+#include <string>
+#include <vector>
 
 namespace nrn {
 
 // === Constants ===
+
+#define NRN_SDK_VERSION "1.0.0"
 
 constexpr uint8_t FRAME_HEADER = 0x5A;
 constexpr uint16_t CRC16_CCITT_INIT = 0x0000;
@@ -31,42 +33,42 @@ enum class MID : uint16_t {
     // Reader Configuration
     QUERY_INFO = 0x0100,
     CONFIRM_CONNECTION = 0x12,
-    
+
     // RFID Inventory
     READ_EPC_TAG = 0x0210,
     PHASE_INVENTORY = 0x0214,
     STOP_INVENTORY = 0x02FF,
     WRITE_EPC_TAG = 0x0211,
-    
+
     // Error Handling
     ERROR_NOTIFICATION = 0x00,
-    
+
     // RFID Baseband
     CONFIG_BASEBAND = 0x020B,
     QUERY_BASEBAND = 0x020C,
-    
+
     // Power Control
     CONFIGURE_READER_POWER = 0x0201,
     QUERY_READER_POWER = 0x0202,
     READER_POWER_CALIBRATION = 0x0103,
     QUERY_POWER_CALIBRATION = 0x0104,
-    
+
     // Filter Settings
     SET_FILTER_SETTINGS = 0x0209,
     QUERY_FILTER_SETTINGS = 0x020A,
-    
+
     // RF Band & Frequency
     SET_RF_BAND = 0x0203,
     QUERY_RF_BAND = 0x0204,
     SET_WORKING_FREQUENCY = 0x0205,
     QUERY_WORKING_FREQUENCY = 0x0206,
-    
+
     // RFID Ability
     QUERY_RFID_ABILITY = 0x1000,
-    
+
     // Buzzer Control
     BUZZER_SWITCH = 0x011E,
-    
+
     // GPIO Commands
     CONFIGURE_GPO = 0x0109,
     QUERY_GPI = 0x010A,
@@ -159,9 +161,7 @@ inline int calculate_rssi(uint8_t rssi_raw) {
  * Calculate frequency in MHz from channel index
  * Formula: 920.0 + chIdx * 0.5
  */
-inline double calculate_frequency(int ch_idx) {
-    return 920.0 + ch_idx * 0.5;
-}
+inline double calculate_frequency(int ch_idx) { return 920.0 + ch_idx * 0.5; }
 
 /**
  * Convert bytes to hex string
@@ -176,7 +176,7 @@ uint32_t build_antenna_mask(const std::vector<int>& antennas);
 // === NRNReader Class ===
 
 class NRNReader {
-public:
+   public:
     /**
      * Constructor
      * @param port Serial port path (e.g., "/dev/ttyUSB0", "COM3")
@@ -184,27 +184,27 @@ public:
      * @param timeout_ms Read timeout in milliseconds (default: 500)
      */
     NRNReader(const std::string& port, int baudrate = 115200, int timeout_ms = 500);
-    
+
     ~NRNReader();
 
     // === Connection ===
-    
+
     /**
      * Open serial connection
      * @return true if successful
      */
     bool open();
-    
+
     /**
      * Close serial connection
      */
     void close();
-    
+
     /**
      * Check if connection is open
      */
     bool is_open() const;
-    
+
     /**
      * Connect and initialize reader
      * @return true if successful
@@ -212,19 +212,19 @@ public:
     bool connect_and_initialize();
 
     // === Reader Information ===
-    
+
     /**
      * Query reader information
      */
     ReaderInfo query_reader_information();
-    
+
     /**
      * Query RFID capabilities
      */
     RFIDAbility query_rfid_ability();
 
     // === Inventory Operations ===
-    
+
     /**
      * Start continuous inventory
      * @param antenna_mask Bitmask of antennas to use
@@ -233,7 +233,7 @@ public:
      * @return true if started successfully
      */
     bool start_inventory(uint32_t antenna_mask, TagCallback callback, bool include_tid = false);
-    
+
     /**
      * Stop current inventory operation
      * @return true if stopped successfully
@@ -241,7 +241,7 @@ public:
     bool stop_inventory();
 
     // === Power Control ===
-    
+
     /**
      * Configure antenna power
      * @param powers Map of antenna ID to power in dBm
@@ -249,7 +249,7 @@ public:
      * @return true if successful
      */
     bool configure_power(const std::map<int, int>& powers, bool persist = false);
-    
+
     /**
      * Query current power settings
      * @return Map of antenna ID to power in dBm
@@ -257,7 +257,7 @@ public:
     std::map<int, int> query_power();
 
     // === GPIO Control ===
-    
+
     /**
      * Configure GPO state
      * @param gpo_id GPO port (1-4)
@@ -265,7 +265,7 @@ public:
      * @return true if successful
      */
     bool configure_gpo(int gpo_id, bool state);
-    
+
     /**
      * Query GPI state
      * @param gpi_id GPI port (1-4)
@@ -274,15 +274,16 @@ public:
     bool query_gpi(int gpi_id);
 
     // === Frame Building ===
-    
+
     /**
      * Build EPC read payload
      * @param antenna_mask Antenna bitmask
      * @param continuous Continuous mode
      * @param include_tid Include TID reading
      */
-    std::vector<uint8_t> build_epc_read_payload(uint32_t antenna_mask, bool continuous = true, bool include_tid = false);
-    
+    std::vector<uint8_t> build_epc_read_payload(uint32_t antenna_mask, bool continuous = true,
+                                                bool include_tid = false);
+
     /**
      * Build protocol frame
      * @param mid Message ID
@@ -291,12 +292,12 @@ public:
     std::vector<uint8_t> build_frame(MID mid, const std::vector<uint8_t>& payload);
 
     // === Frame Parsing ===
-    
+
     /**
      * Parse received frame
      */
     ParsedFrame parse_frame(const std::vector<uint8_t>& data);
-    
+
     /**
      * Parse EPC tag data from inventory response
      */
@@ -305,20 +306,20 @@ public:
     // === Logging ===
     void set_log_callback(LogCallback callback);
 
-private:
+   private:
     class Impl;
     std::unique_ptr<Impl> pimpl_;
-    
+
     std::string port_;
     int baudrate_;
     int timeout_ms_;
     LogCallback log_callback_;
     uint32_t antenna_mask_;
-    
+
     void log(const std::string& level, const std::string& message);
     std::vector<uint8_t> send_and_receive(const std::vector<uint8_t>& frame);
 };
 
-} // namespace nrn
+}  // namespace nrn
 
-#endif // NRN_SDK_HPP
+#endif  // NRN_SDK_HPP

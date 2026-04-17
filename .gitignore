@@ -19,6 +19,7 @@
 # Fortran module files
 *.mod
 *.smod
+!**/go.mod
 
 # Compiled Static libraries
 *.lai
@@ -42,6 +43,8 @@ obj/
 
 # Python
 __pycache__/
+.pytest_cache/
+.ruff_cache/
 *.py[cod]
 *$py.class
 *.so
@@ -98,3 +101,12 @@ bld/
 [Oo]bj/
 [Ll]og/
 [Ll]ogs/
+
+# SDK packaging outputs
+dist/
+target/
+build/
+node_modules/
+*.egg-info/
+sdk/nation/webserial/dist/
+sdk/nation/rust/Cargo.lock

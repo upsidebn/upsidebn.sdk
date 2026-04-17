@@ -1,0 +1,148 @@
+version: 2.1
+
+jobs:
+  python:
+    docker:
+      - image: cimg/python:3.12
+    working_directory: ~/project
+    steps:
+      - checkout
+      - run:
+          name: Install Python dependencies
+          working_directory: sdk/nation/python
+          command: |
+            python -m pip install --upgrade pip
+            python -m pip install -e .[dev]
+      - run:
+          name: Python lint
+          working_directory: sdk/nation/python
+          command: |
+            ruff check .
+            ruff format --check .
+      - run:
+          name: Python tests
+          working_directory: sdk/nation/python
+          command: pytest -m "not integration"
+      - run:
+          name: Python build
+          working_directory: sdk/nation/python
+          command: python -m build --no-isolation
+
+  rust:
+    docker:
+      - image: cimg/rust:1.86
+    working_directory: ~/project
+    steps:
+      - checkout
+      - run:
+          name: Install Rust components
+          command: rustup component add rustfmt clippy
+      - run:
+          name: Rust format
+          working_directory: sdk/nation/rust
+          command: cargo fmt --all -- --check
+      - run:
+          name: Rust lint
+          working_directory: sdk/nation/rust
+          command: cargo clippy --all-targets --all-features -- -D warnings
+      - run:
+          name: Rust tests
+          working_directory: sdk/nation/rust
+          command: cargo test
+
+  go:
+    docker:
+      - image: cimg/go:1.22
+    working_directory: ~/project
+    steps:
+      - checkout
+      - run:
+          name: Install golangci-lint
+          working_directory: sdk/nation/go
+          command: |
+            go install github.com/golangci/golangci-lint/cmd/golangci-lint@v2.1.6
+            echo 'export PATH="$(go env GOPATH)/bin:$PATH"' >> "$BASH_ENV"
+      - run:
+          name: Go format
+          working_directory: sdk/nation/go
+          command: test -z "$(gofmt -l .)"
+      - run:
+          name: Go vet
+          working_directory: sdk/nation/go
+          command: go vet ./...
+      - run:
+          name: Go lint
+          working_directory: sdk/nation/go
+          command: golangci-lint run ./...
+      - run:
+          name: Go tests
+          working_directory: sdk/nation/go
+          command: go test ./...
+
+  cpp:
+    docker:
+      - image: cimg/base:stable
+    working_directory: ~/project
+    steps:
+      - checkout
+      - run:
+          name: Install C++ build dependencies
+          command: |
+            sudo apt-get update
+            sudo apt-get install -y cmake g++
+      - run:
+          name: C++ configure
+          working_directory: sdk/nation/cpp
+          command: cmake -S . -B build -DNRN_BUILD_TESTS=ON
+      - run:
+          name: C++ build
+          working_directory: sdk/nation/cpp
+          command: cmake --build build
+      - run:
+          name: C++ tests
+          working_directory: sdk/nation/cpp
+          command: ctest --test-dir build --output-on-failure
+
+  webserial:
+    docker:
+      - image: cimg/node:20.18
+    working_directory: ~/project
+    steps:
+      - checkout
+      - run:
+          name: Install Node dependencies
+          working_directory: sdk/nation/webserial
+          command: npm ci
+      - run:
+          name: WebSerial lint
+          working_directory: sdk/nation/webserial
+          command: npm run lint
+      - run:
+          name: WebSerial format
+          working_directory: sdk/nation/webserial
+          command: npm run format:check
+      - run:
+          name: WebSerial typecheck
+          working_directory: sdk/nation/webserial
+          command: npm run typecheck
+      - run:
+          name: WebSerial tests
+          working_directory: sdk/nation/webserial
+          command: npm test -- --run
+      - run:
+          name: WebSerial build
+          working_directory: sdk/nation/webserial
+          command: npm run build
+      - run:
+          name: WebSerial package dry-run
+          working_directory: sdk/nation/webserial
+          command: npm pack --dry-run
+
+workflows:
+  ci:
+    jobs:
+      - python
+      - rust
+      - go
+      - cpp
+      - webserial

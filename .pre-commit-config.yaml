@@ -1,0 +1,46 @@
+exclude: ^(legacy/|driver/)
+
+repos:
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v5.0.0
+    hooks:
+      - id: trailing-whitespace
+      - id: end-of-file-fixer
+      - id: check-yaml
+      - id: check-added-large-files
+
+  - repo: https://github.com/astral-sh/ruff-pre-commit
+    rev: v0.8.1
+    hooks:
+      - id: ruff
+        files: ^sdk/nation/python/
+      - id: ruff-format
+        files: ^sdk/nation/python/
+
+  - repo: local
+    hooks:
+      - id: go-fmt
+        name: go fmt
+        entry: bash -lc 'cd sdk/nation/go && test -z "$(gofmt -l .)"'
+        language: system
+        pass_filenames: false
+      - id: go-vet
+        name: go vet
+        entry: bash -lc 'cd sdk/nation/go && go vet ./...'
+        language: system
+        pass_filenames: false
+      - id: cargo-fmt
+        name: cargo fmt
+        entry: bash -lc 'cd sdk/nation/rust && cargo fmt --all -- --check'
+        language: system
+        pass_filenames: false
+      - id: clang-format
+        name: clang-format
+        entry: bash -lc 'cd sdk/nation/cpp && PATH=/opt/homebrew/opt/llvm/bin:$PATH clang-format --dry-run --Werror nrn.cpp nrn.hpp tests/test_nrn.cpp'
+        language: system
+        pass_filenames: false
+      - id: prettier
+        name: prettier
+        entry: bash -lc 'cd sdk/nation/webserial && npx prettier --check .'
+        language: system
+        pass_filenames: false

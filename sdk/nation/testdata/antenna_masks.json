@@ -1,0 +1,29 @@
+{
+  "vectors": [
+    {
+      "name": "single_antenna_1",
+      "antennas": [1],
+      "expected_mask_hex": "00000001"
+    },
+    {
+      "name": "antennas_1_2",
+      "antennas": [1, 2],
+      "expected_mask_hex": "00000003"
+    },
+    {
+      "name": "antennas_1_2_3_4",
+      "antennas": [1, 2, 3, 4],
+      "expected_mask_hex": "0000000F"
+    },
+    {
+      "name": "sparse_antennas",
+      "antennas": [1, 4, 7, 32],
+      "expected_mask_hex": "80000049"
+    },
+    {
+      "name": "highest_antenna",
+      "antennas": [32],
+      "expected_mask_hex": "80000000"
+    }
+  ]
+}

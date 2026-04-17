@@ -1,0 +1,166 @@
+name: CI
+
+on:
+  workflow_dispatch:
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  changes:
+    runs-on: ubuntu-latest
+    outputs:
+      python: ${{ steps.filter.outputs.python }}
+      rust: ${{ steps.filter.outputs.rust }}
+      go: ${{ steps.filter.outputs.go }}
+      cpp: ${{ steps.filter.outputs.cpp }}
+      webserial: ${{ steps.filter.outputs.webserial }}
+    steps:
+      - uses: actions/checkout@v4
+      - id: filter
+        uses: dorny/paths-filter@v3
+        with:
+          filters: |
+            python:
+              - 'sdk/nation/python/**'
+              - 'sdk/nation/testdata/**'
+              - '.github/workflows/**'
+            rust:
+              - 'sdk/nation/rust/**'
+              - 'sdk/nation/testdata/**'
+              - '.github/workflows/**'
+            go:
+              - 'sdk/nation/go/**'
+              - 'sdk/nation/testdata/**'
+              - '.github/workflows/**'
+            cpp:
+              - 'sdk/nation/cpp/**'
+              - 'sdk/nation/testdata/**'
+              - '.github/workflows/**'
+            webserial:
+              - 'sdk/nation/webserial/**'
+              - 'sdk/nation/testdata/**'
+              - '.github/workflows/**'
+
+  python:
+    needs: changes
+    if: needs.changes.outputs.python == 'true'
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python-version: ["3.9", "3.10", "3.11", "3.12"]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+      - run: python -m pip install --upgrade pip
+      - run: python -m pip install -e .[dev]
+        working-directory: sdk/nation/python
+      - run: ruff check .
+        working-directory: sdk/nation/python
+      - run: ruff format --check .
+        working-directory: sdk/nation/python
+      - run: pytest -m "not integration"
+        working-directory: sdk/nation/python
+
+  rust:
+    needs: changes
+    if: needs.changes.outputs.rust == 'true'
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        toolchain: [stable, "1.70.0"]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          toolchain: ${{ matrix.toolchain }}
+          components: clippy, rustfmt
+      - run: cargo fmt --all -- --check
+        working-directory: sdk/nation/rust
+      - run: cargo clippy --all-targets --all-features -- -D warnings
+        working-directory: sdk/nation/rust
+      - run: cargo test
+        working-directory: sdk/nation/rust
+
+  go:
+    needs: changes
+    if: needs.changes.outputs.go == 'true'
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        go-version: ["1.21", "1.22"]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version: ${{ matrix.go-version }}
+      - uses: golangci/golangci-lint-action@v6
+        with:
+          version: latest
+          working-directory: sdk/nation/go
+          args: ./...
+      - run: test -z "$(gofmt -l .)"
+        working-directory: sdk/nation/go
+      - run: go vet ./...
+        working-directory: sdk/nation/go
+      - run: go test ./...
+        working-directory: sdk/nation/go
+
+  cpp:
+    needs: changes
+    if: needs.changes.outputs.cpp == 'true'
+    strategy:
+      matrix:
+        os: [ubuntu-latest, macos-latest]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+      - run: cmake -S . -B build -DNRN_BUILD_TESTS=ON
+        working-directory: sdk/nation/cpp
+      - run: cmake --build build
+        working-directory: sdk/nation/cpp
+      - run: ctest --test-dir build --output-on-failure
+        working-directory: sdk/nation/cpp
+
+  webserial:
+    needs: changes
+    if: needs.changes.outputs.webserial == 'true'
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        node-version: ["18", "20"]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node-version }}
+          cache: npm
+          cache-dependency-path: sdk/nation/webserial/package.json
+      - run: npm install
+        working-directory: sdk/nation/webserial
+      - run: npm run lint
+        working-directory: sdk/nation/webserial
+      - run: npm run format:check
+        working-directory: sdk/nation/webserial
+      - run: npm run typecheck
+        working-directory: sdk/nation/webserial
+      - run: npm test -- --run
+        working-directory: sdk/nation/webserial
+
+  ci-gate:
+    needs: [changes, python, rust, go, cpp, webserial]
+    if: always()
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check required jobs
+        run: |
+          results="${{ needs.python.result }} ${{ needs.rust.result }} ${{ needs.go.result }} ${{ needs.cpp.result }} ${{ needs.webserial.result }}"
+          for result in $results; do
+            if [ "$result" != "success" ] && [ "$result" != "skipped" ]; then
+              echo "A required CI job failed: $results"
+              exit 1
+            fi
+          done

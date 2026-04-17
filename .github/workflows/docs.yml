@@ -1,0 +1,58 @@
+name: Docs
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+      - run: sudo apt-get update && sudo apt-get install -y doxygen
+      - run: python -m pip install pdoc
+      - run: npm install
+        working-directory: sdk/nation/webserial
+      - run: mkdir -p site/python site/rust site/webserial site/cpp
+      - run: pdoc nrn.py -o ../../site/python
+        working-directory: sdk/nation/python
+      - run: cargo doc --no-deps
+        working-directory: sdk/nation/rust
+      - run: cp -R sdk/nation/rust/target/doc/. site/rust/
+      - run: npx typedoc src/index.ts --out ../../site/webserial
+        working-directory: sdk/nation/webserial
+      - run: |
+          cat > Doxyfile <<'EOF'
+          PROJECT_NAME = nrn-sdk
+          OUTPUT_DIRECTORY = ../../site/cpp
+          GENERATE_HTML = YES
+          RECURSIVE = NO
+          INPUT = nrn.hpp nrn.cpp
+          QUIET = YES
+          EOF
+          doxygen Doxyfile
+        working-directory: sdk/nation/cpp
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: site
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v4

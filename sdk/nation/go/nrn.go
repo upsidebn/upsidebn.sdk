@@ -21,6 +21,7 @@ import (
 	"encoding/binary"
 	"encoding/hex"
 	"fmt"
+	"io"
 	"log"
 	"math"
 	"strings"
@@ -34,7 +35,9 @@ import (
 // === Constants ===
 
 const (
-	FrameHeader     byte   = 0x5A
+	// FrameHeader and related protocol defaults define the on-wire envelope.
+	FrameHeader byte = 0x5A
+	// CRC16CCITTInit is the initial CRC accumulator value.
 	CRC16CCITTInit  uint16 = 0x0000
 	CRC16CCITTPoly  uint16 = 0x8005
 	DefaultBaudrate        = 115200
@@ -43,73 +46,80 @@ const (
 
 // === Message IDs ===
 
+// MID identifies a protocol message ID.
 type MID uint16
 
 const (
-	// Reader Configuration
-	MIDQueryInfo          MID = 0x0100
-	MIDConfirmConnection  MID = 0x12
+	// MIDQueryInfo and related reader-configuration messages.
+	MIDQueryInfo MID = 0x0100
+	// MIDConfirmConnection requests an initialization handshake.
+	MIDConfirmConnection MID = 0x12
 
-	// RFID Inventory
-	MIDReadEpcTag      MID = 0x0210
-	MIDPhaseInventory  MID = 0x0214
-	MIDStopInventory   MID = 0x02FF
-	MIDWriteEpcTag     MID = 0x0211
+	// MIDReadEpcTag and related inventory messages.
+	MIDReadEpcTag     MID = 0x0210
+	MIDPhaseInventory MID = 0x0214
+	MIDStopInventory  MID = 0x02FF
+	MIDWriteEpcTag    MID = 0x0211
 
-	// Error Handling
+	// MIDErrorNotification and related error messages.
 	MIDErrorNotification MID = 0x00
 
-	// RFID Baseband
+	// MIDConfigBaseband and related baseband messages.
 	MIDConfigBaseband MID = 0x020B
 	MIDQueryBaseband  MID = 0x020C
 
-	// Power Control
+	// MIDConfigureReaderPower and related power-control messages.
 	MIDConfigureReaderPower   MID = 0x0201
 	MIDQueryReaderPower       MID = 0x0202
 	MIDReaderPowerCalibration MID = 0x0103
 	MIDQueryPowerCalibration  MID = 0x0104
 
-	// Filter Settings
+	// MIDSetFilterSettings and related filter messages.
 	MIDSetFilterSettings   MID = 0x0209
 	MIDQueryFilterSettings MID = 0x020A
 
-	// RF Band & Frequency
-	MIDSetRfBand            MID = 0x0203
-	MIDQueryRfBand          MID = 0x0204
-	MIDSetWorkingFrequency  MID = 0x0205
+	// MIDSetRfBand and related RF-band messages.
+	MIDSetRfBand             MID = 0x0203
+	MIDQueryRfBand           MID = 0x0204
+	MIDSetWorkingFrequency   MID = 0x0205
 	MIDQueryWorkingFrequency MID = 0x0206
 
-	// RFID Ability
+	// MIDQueryRfidAbility identifies an RFID capability query.
 	MIDQueryRfidAbility MID = 0x1000
 
-	// Buzzer Control
+	// MIDBuzzerSwitch identifies a buzzer-control message.
 	MIDBuzzerSwitch MID = 0x011E
 
-	// GPIO Commands
-	MIDConfigureGpo       MID = 0x0109
-	MIDQueryGpi           MID = 0x010A
+	// MIDConfigureGpo and related GPIO messages.
+	MIDConfigureGpo        MID = 0x0109
+	MIDQueryGpi            MID = 0x010A
 	MIDConfigureGpiTrigger MID = 0x010B
-	MIDQueryGpiTrigger    MID = 0x010C
+	MIDQueryGpiTrigger     MID = 0x010C
 )
 
 // === Beeper Modes ===
 
+// BeeperMode controls buzzer behavior.
 type BeeperMode uint8
 
 const (
-	BeeperQuiet            BeeperMode = 0x00
-	BeeperAfterInventory   BeeperMode = 0x01
-	BeeperAfterTag         BeeperMode = 0x02
+	// BeeperQuiet and related constants map directly to firmware modes.
+	BeeperQuiet BeeperMode = 0x00
+	// BeeperAfterInventory requests a beep when inventory completes.
+	BeeperAfterInventory BeeperMode = 0x01
+	BeeperAfterTag       BeeperMode = 0x02
 )
 
 // === RF Profiles ===
 
+// RFProfile describes a baseband profile preset.
 type RFProfile struct {
 	ID          int
 	Name        string
 	Description string
 }
 
+// RFProfiles lists the known built-in profile presets.
 var RFProfiles = []RFProfile{
 	{0, "Profile 0", "Default baseband profile"},
 	{1, "Profile 1", "High performance profile"},
@@ -210,11 +220,19 @@ func BuildAntennaMask(antennas []int) uint32 {
 	return mask
 }
 
+type serialTransport interface {
+	io.ReadWriteCloser
+	SetReadTimeout(time.Duration) error
+	ResetInputBuffer() error
+}
+
 // === NRNReader ===
 
 // NRNReader is the main SDK class for reader communication
+//
+//revive:disable-next-line:var-naming
 type NRNReader struct {
-	port        serial.Port
+	port        serialTransport
 	portName    string
 	baudrate    int
 	timeout     time.Duration
@@ -238,26 +256,38 @@ func NewNRNReader(portName string, baudrate int) (*NRNReader, error) {
 		return nil, fmt.Errorf("failed to open port %s: %w", portName, err)
 	}
 
-	port.SetReadTimeout(DefaultTimeout)
+	if err := port.SetReadTimeout(DefaultTimeout); err != nil {
+		return nil, fmt.Errorf("failed to set read timeout: %w", err)
+	}
 
 	log.Printf("Opened port: %s @ %d baud", portName, baudrate)
 
+	return NewNRNReaderWithTransport(port, portName, baudrate), nil
+}
+
+// NewNRNReaderWithTransport creates a reader around an existing transport.
+func NewNRNReaderWithTransport(port serialTransport, portName string, baudrate int) *NRNReader {
 	return &NRNReader{
 		port:        port,
 		portName:    portName,
 		baudrate:    baudrate,
 		timeout:     DefaultTimeout,
 		antennaMask: 0x00000001,
-	}, nil
+	}
 }
 
 // Close closes the serial connection
 func (r *NRNReader) Close() error {
-	r.StopInventory()
-	if r.port != nil {
-		return r.port.Close()
+	var firstErr error
+	if err := r.StopInventory(); err != nil {
+		firstErr = err
 	}
-	return nil
+	if r.port != nil {
+		if err := r.port.Close(); err != nil && firstErr == nil {
+			firstErr = err
+		}
+	}
+	return firstErr
 }
 
 // ConnectAndInitialize initializes the reader
@@ -459,6 +489,9 @@ func (r *NRNReader) StartInventory(antennaMask uint32, callback TagCallback) err
 // StopInventory stops the current inventory operation
 func (r *NRNReader) StopInventory() error {
 	r.running.Store(false)
+	if r.port == nil {
+		return nil
+	}
 
 	frame := r.BuildFrame(MIDStopInventory, nil)
 	_, err := r.port.Write(frame)
@@ -663,7 +696,9 @@ func (r *NRNReader) sendAndReceive(frame []byte) ([]byte, error) {
 	defer r.mu.Unlock()
 
 	// Clear input buffer
-	r.port.ResetInputBuffer()
+	if err := r.port.ResetInputBuffer(); err != nil {
+		return nil, fmt.Errorf("reset input buffer: %w", err)
+	}
 
 	// Send frame
 	_, err := r.port.Write(frame)
@@ -725,4 +760,3 @@ func (r *NRNReader) ParseFrame(data []byte) ParsedFrame {
 
 	return frame
 }
-

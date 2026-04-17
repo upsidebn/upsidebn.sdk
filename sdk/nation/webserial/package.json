@@ -1,0 +1,57 @@
+{
+  "name": "@nextwaves/nrn-sdk",
+  "version": "1.0.0",
+  "description": "TypeScript Web Serial SDK for Nextwaves NRN RFID readers.",
+  "license": "MIT",
+  "type": "module",
+  "main": "./dist/cjs/index.js",
+  "module": "./dist/esm/index.js",
+  "types": "./dist/esm/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/esm/index.d.ts",
+      "import": "./dist/esm/index.js",
+      "require": "./dist/cjs/index.js"
+    }
+  },
+  "files": [
+    "dist",
+    "README.md",
+    "LICENSE"
+  ],
+  "scripts": {
+    "clean": "rimraf dist",
+    "build:esm": "tsc -p tsconfig.esm.json",
+    "build:cjs": "tsc -p tsconfig.cjs.json && node ./scripts/fix-cjs-package.mjs",
+    "build": "npm run clean && npm run build:esm && npm run build:cjs",
+    "typecheck": "tsc --noEmit -p tsconfig.esm.json",
+    "lint": "eslint .",
+    "format:check": "prettier --check .",
+    "test": "vitest run",
+    "prepublishOnly": "npm run build"
+  },
+  "homepage": "https://github.com/Nextwaves-Industries/nextwaves-sdk#readme",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Nextwaves-Industries/nextwaves-sdk.git"
+  },
+  "bugs": {
+    "url": "https://github.com/Nextwaves-Industries/nextwaves-sdk/issues"
+  },
+  "engines": {
+    "node": ">=18"
+  },
+  "devDependencies": {
+    "@eslint/js": "^9.12.0",
+    "@types/node": "^24.0.0",
+    "eslint": "^9.12.0",
+    "eslint-config-prettier": "^9.1.0",
+    "globals": "^15.11.0",
+    "prettier": "^3.3.3",
+    "rimraf": "^6.0.1",
+    "typedoc": "^0.26.11",
+    "typescript": "^5.4.5",
+    "typescript-eslint": "^8.8.0",
+    "vitest": "^2.1.2"
+  }
+}

@@ -1,0 +1,7 @@
+src/
+tests/
+scripts/
+tsconfig*.json
+eslint.config.js
+.prettierrc
+vitest.config.ts

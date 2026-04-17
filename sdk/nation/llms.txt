@@ -27,7 +27,7 @@ reader.open()
 # Initialize
 if reader.Connect_Reader_And_Initialize():
     print("Connected!")
-    
+
 # Query reader info
 info = reader.Query_Reader_Information()
 # Returns: {serial_number, power_on_time_sec, app_version, ...}
@@ -35,7 +35,7 @@ info = reader.Query_Reader_Information()
 # Start inventory with callback
 def on_tag(tag):
     print(f"EPC: {tag['epc']}, RSSI: {tag['rssi']} dBm, Antenna: {tag['antenna_id']}")
-    
+
 reader.start_inventory_with_mode(antenna_mask=0x01, callback=on_tag)
 
 # Stop inventory
@@ -80,21 +80,21 @@ class MID(IntEnum):
     PHASE_INVENTORY = 0x0214
     STOP_INVENTORY = 0x02FF
     WRITE_EPC_TAG = 0x0211
-    
+
     # Power
     CONFIGURE_READER_POWER = 0x0201
     QUERY_READER_POWER = 0x0202
-    
+
     # GPIO
     CONFIGURE_GPO = 0x0109
     QUERY_GPI = 0x010A
     CONFIGURE_GPI_TRIGGER = 0x010B
-    
+
     # Filter/RF
     SET_FILTER_SETTINGS = 0x0209
     SET_RF_BAND = 0x0203
     SET_WORKING_FREQUENCY = 0x0205
-    
+
     @classmethod
     def all_read_end_mids(cls) -> list:
         return [0x01, 0x21, 0x31]
@@ -280,7 +280,7 @@ Antenna ID:   1 byte
 tags = []
 def on_tag(tag):
     tags.append(tag)
-    
+
 reader.start_inventory_with_mode(0x0F, on_tag)  # All 4 antennas
 time.sleep(5)  # Scan for 5 seconds
 reader.stop_inventory()

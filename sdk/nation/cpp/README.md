@@ -19,13 +19,13 @@ A cross-platform C++ SDK for NRN RFID readers.
 
 int main() {
     nrn::NRNReader reader("/dev/ttyUSB0", 115200);
-    
+
     if (!reader.open()) {
         return 1;
     }
-    
+
     reader.connect_and_initialize();
-    
+
     // Start inventory
     reader.start_inventory(0x01, [](const nrn::TagData& tag) {
         std::cout << "EPC: " << tag.epc;
@@ -34,11 +34,11 @@ int main() {
         }
         std::cout << std::endl;
     });
-    
+
     std::this_thread::sleep_for(std::chrono::seconds(5));
     reader.stop_inventory();
     reader.close();
-    
+
     return 0;
 }
 ```

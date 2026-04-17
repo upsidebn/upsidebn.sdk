@@ -1,54 +1,67 @@
-# Nextwaves Industries RFID Reader SDK
+# Nextwaves NRN RFID Reader SDK
 
-Official SDK for integrating Nextwaves Industries RFID Readers into your applications.
+Multi-language SDK for Nextwaves NRN RFID readers.
 
-> **🚀 Quick Start:** Visit [app.nextwaves.com](https://app.nextwaves.com) to use the reader directly in your browser — no installation required!
+## Install
 
-## Overview
+| Language | Package | Install |
+|---|---|---|
+| Python | `nrn-sdk` | `pip install nrn-sdk` |
+| Rust | `nrn-sdk` | `cargo add nrn-sdk` |
+| Go | `github.com/Nextwaves-Industries/nextwaves-sdk/sdk/nation/go` | `go get github.com/Nextwaves-Industries/nextwaves-sdk/sdk/nation/go@v1.0.0` |
+| TypeScript / WebSerial | `@nextwaves/nrn-sdk` | `npm install @nextwaves/nrn-sdk` |
+| C++ | `sdk/nation/cpp` | CMake `FetchContent` or `add_subdirectory()` |
 
-The Nextwaves Reader (NWR) is a high-performance UHF RFID reader designed for industrial applications. This SDK provides libraries and tools across multiple programming languages to integrate the reader into your projects.
+## Layout
 
-## SDK Languages
+- `sdk/nation/python` contains the Python module.
+- `sdk/nation/rust` contains the Rust crate.
+- `sdk/nation/go` contains the Go module.
+- `sdk/nation/webserial` contains the TypeScript/Web Serial package.
+- `sdk/nation/cpp` contains the C++ library and CMake package metadata.
+- `examples/` contains per-language usage examples.
+- `driver/` contains CP210x USB-to-UART drivers.
+- `legacy/` contains archived vendor snapshots that are not covered by the root MIT license.
 
-| Language | Path | Description |
-|----------|------|-------------|
-| **C#** | `/sdk/nation/csharp/` | .NET SDK with Windows Forms sample |
-| **C++** | `/sdk/nation/cpp/` | Header-only C++ implementation |
-| **Python** | `/sdk/nation/python/` | Python SDK class |
-| **Rust** | `/sdk/nation/rust/` | Rust crate implementation |
-| **Go** | `/sdk/nation/go/` | Go module implementation |
-| **TypeScript** | `/sdk/nation/webserial/` | Web Serial API for browser use |
+## Go import path
 
-## Drivers
+```go
+import nrn "github.com/Nextwaves-Industries/nextwaves-sdk/sdk/nation/go"
+```
 
-- `/driver` - USB-to-UART bridge drivers (CP210x)
+## CMake consumption
 
-## Requirements
+```cmake
+include(FetchContent)
 
-| Platform | Requirements |
-|----------|--------------|
-| **Windows** | Windows 7/8/10/11, CP210x driver |
-| **Linux** | Most distributions (driver usually built-in) |
-| **macOS** | macOS 10.9+, CP210x driver |
-| **Web** | Chrome/Edge with Web Serial API support |
+FetchContent_Declare(
+  nrn_sdk
+  GIT_REPOSITORY https://github.com/Nextwaves-Industries/nextwaves-sdk.git
+  GIT_TAG v1.0.0
+  SOURCE_SUBDIR sdk/nation/cpp
+)
 
-## Getting Started
+FetchContent_MakeAvailable(nrn_sdk)
 
-1. **Install Driver** — Install the CP210x USB-to-UART bridge driver from `/driver` (if needed)
-2. **Connect Reader** — Connect the reader to your computer via USB
-3. **Choose SDK** — Pick the SDK for your preferred language
-4. **Run Examples** — Build and run the sample applications
+target_link_libraries(your_target PRIVATE nrn-sdk)
+```
 
-## Documentation
+## Guides
 
-API documentation and protocol specifications are available in the `/docs` directory.
+- [Examples](/Users/dea/code_env/nextwaves/nextwaves-sdk/examples/README.md)
+- [Python SDK](/Users/dea/code_env/nextwaves/nextwaves-sdk/sdk/nation/python/README.md)
+- [Rust SDK](/Users/dea/code_env/nextwaves/nextwaves-sdk/sdk/nation/rust/README.md)
+- [Go SDK](/Users/dea/code_env/nextwaves/nextwaves-sdk/sdk/nation/go/README.md)
+- [C++ SDK](/Users/dea/code_env/nextwaves/nextwaves-sdk/sdk/nation/cpp/README.md)
+- [WebSerial SDK](/Users/dea/code_env/nextwaves/nextwaves-sdk/sdk/nation/webserial/README.md)
 
 ## Support
 
-- **Email:** tech@nextwaves.industries
-- **Website:** [nextwaves.com](https://nextwaves.com)
-- **Web App:** [app.nextwaves.com](https://app.nextwaves.com)
+- `tech@nextwaves.industries`
+- [nextwaves.com](https://nextwaves.com)
+- [app.nextwaves.com](https://app.nextwaves.com)
 
 ## License
 
-Copyright © 2024-2026 Nextwaves Industries. All rights reserved.
+This repository is MIT-licensed for code under `/sdk/nation/` and `/examples/`.
+`/legacy/` and `/driver/` retain their own provenance and licensing.
