@@ -1,0 +1,16 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "nw-sdk"
+version = "0.1.0"
+description = "NW UHF RFID reader SDK for Python and WebSerial"
+readme = "README.md"
+requires-python = ">=3.10"
+dependencies = ["pyserial>=3.5"]
+authors = [{ name = "NW" }]
+license = { text = "Proprietary" }
+
+[tool.setuptools.packages.find]
+where = ["src"]

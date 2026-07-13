@@ -1,0 +1,1204 @@
+<!doctype html>
+<html lang="vi">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>UHF RFID Reader Monitor</title>
+  <style>
+    :root {
+      color-scheme: light;
+      --bg: #f6f7f9;
+      --panel: #ffffff;
+      --ink: #17202a;
+      --muted: #667085;
+      --line: #d8dde6;
+      --accent: #0f766e;
+      --accent-2: #b42318;
+      --warn: #b7791f;
+      --good: #087443;
+      --shadow: 0 10px 30px rgba(20, 31, 45, 0.08);
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      background:
+        linear-gradient(135deg, rgba(15, 118, 110, 0.12), transparent 38%),
+        linear-gradient(315deg, rgba(180, 35, 24, 0.08), transparent 34%),
+        var(--bg);
+      color: var(--ink);
+      font: 14px/1.45 Arial, Helvetica, sans-serif;
+    }
+
+    .app {
+      min-height: 100vh;
+      display: grid;
+      grid-template-rows: auto 1fr;
+    }
+
+    header {
+      padding: 18px 24px;
+      border-bottom: 1px solid var(--line);
+      background: rgba(255, 255, 255, 0.82);
+      backdrop-filter: blur(12px);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+    }
+
+    h1 {
+      margin: 0;
+      font-size: 20px;
+      font-weight: 700;
+      letter-spacing: 0;
+    }
+
+    .subtitle {
+      margin-top: 2px;
+      color: var(--muted);
+      font-size: 13px;
+    }
+
+    .status {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 8px 10px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: var(--panel);
+      color: var(--muted);
+      white-space: nowrap;
+    }
+
+    .dot {
+      width: 9px;
+      height: 9px;
+      border-radius: 50%;
+      background: #98a2b3;
+    }
+
+    .status.connected .dot { background: var(--good); }
+    .status.running .dot { background: var(--warn); }
+
+    main {
+      padding: 22px 24px 28px;
+      display: grid;
+      grid-template-columns: 320px 1fr;
+      gap: 18px;
+      align-items: start;
+    }
+
+    section {
+      background: var(--panel);
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      box-shadow: var(--shadow);
+    }
+
+    .controls {
+      padding: 16px;
+      display: grid;
+      gap: 14px;
+    }
+
+    .field {
+      display: grid;
+      gap: 6px;
+    }
+
+    label {
+      color: var(--muted);
+      font-size: 12px;
+      font-weight: 700;
+      text-transform: uppercase;
+    }
+
+    input, select {
+      width: 100%;
+      height: 38px;
+      border: 1px solid var(--line);
+      border-radius: 7px;
+      padding: 0 10px;
+      background: #fff;
+      color: var(--ink);
+      font: inherit;
+    }
+
+    .buttons {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+    }
+
+    .button-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+
+    .button-row button {
+      min-width: 120px;
+      flex: 1;
+    }
+
+    button {
+      height: 40px;
+      border: 1px solid transparent;
+      border-radius: 7px;
+      color: #fff;
+      background: var(--accent);
+      font: inherit;
+      font-weight: 700;
+      cursor: pointer;
+    }
+
+    button.secondary {
+      color: var(--ink);
+      background: #fff;
+      border-color: var(--line);
+    }
+
+    button.danger { background: var(--accent-2); }
+    button:disabled { cursor: not-allowed; opacity: 0.5; }
+
+    .metrics {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 10px;
+    }
+
+    .config-grid {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(120px, 1fr));
+      gap: 12px;
+    }
+
+    .check-row {
+      min-height: 38px;
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      flex-wrap: wrap;
+    }
+
+    .check-row label {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      color: var(--ink);
+      font-size: 13px;
+      font-weight: 700;
+      text-transform: none;
+    }
+
+    .check-row input {
+      width: 16px;
+      height: 16px;
+      padding: 0;
+    }
+
+    .metric {
+      min-height: 74px;
+      padding: 12px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: #fbfcfe;
+    }
+
+    .metric .label {
+      color: var(--muted);
+      font-size: 12px;
+      font-weight: 700;
+    }
+
+    .metric .value {
+      margin-top: 8px;
+      font-size: 24px;
+      font-weight: 800;
+    }
+
+    .main-panel {
+      display: grid;
+      gap: 18px;
+    }
+
+    .panel-head {
+      padding: 14px 16px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      border-bottom: 1px solid var(--line);
+      gap: 12px;
+    }
+
+    .panel-title {
+      font-size: 15px;
+      font-weight: 800;
+    }
+
+    .count {
+      color: var(--muted);
+      font-size: 13px;
+    }
+
+    .table-wrap {
+      overflow: auto;
+      max-height: 55vh;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      min-width: 760px;
+    }
+
+    th, td {
+      padding: 10px 12px;
+      border-bottom: 1px solid var(--line);
+      text-align: left;
+      vertical-align: middle;
+    }
+
+    th {
+      position: sticky;
+      top: 0;
+      background: #f8fafc;
+      color: var(--muted);
+      font-size: 12px;
+      text-transform: uppercase;
+      z-index: 1;
+    }
+
+    td.epc {
+      font-family: Consolas, "Courier New", monospace;
+      font-size: 13px;
+    }
+
+    .empty {
+      padding: 36px 16px;
+      text-align: center;
+      color: var(--muted);
+    }
+
+    .log {
+      height: 190px;
+      padding: 10px 12px;
+      overflow: auto;
+      background: #101828;
+      color: #d0d5dd;
+      border-radius: 0 0 8px 8px;
+      font-family: Consolas, "Courier New", monospace;
+      font-size: 12px;
+      white-space: pre-wrap;
+    }
+
+    .hint {
+      color: var(--muted);
+      font-size: 12px;
+    }
+
+    @media (max-width: 920px) {
+      main { grid-template-columns: 1fr; }
+      header { align-items: flex-start; flex-direction: column; }
+      .metrics { grid-template-columns: repeat(2, 1fr); }
+      .config-grid { grid-template-columns: 1fr 1fr; }
+    }
+  </style>
+</head>
+<body>
+  <div class="app">
+    <header>
+      <div>
+        <h1>UHF RFID Reader Monitor</h1>
+        <div class="subtitle">WebSerial / Inventory 0x01 / ANT1 default</div>
+      </div>
+      <div id="status" class="status"><span class="dot"></span><span id="statusText">Chưa kết nối</span></div>
+    </header>
+
+    <main>
+      <section class="controls">
+        <div class="field">
+          <label>Baud rate</label>
+          <select id="baud">
+            <option value="9600">9600bps</option>
+            <option value="19200">19200bps</option>
+            <option value="38400">38400bps</option>
+            <option value="57600">57600bps</option>
+            <option value="115200" selected>115200bps</option>
+            <option value="230400">230400bps</option>
+            <option value="460800">460800bps</option>
+            <option value="921600">921600bps</option>
+          </select>
+        </div>
+        <div class="field">
+          <label>Reader address</label>
+          <input id="address" value="0x00" />
+        </div>
+
+        <div class="field">
+          <label>Antenna</label>
+          <select id="antenna">
+            <option value="1" selected>ANT1</option>
+            <option value="2">ANT2</option>
+            <option value="3">ANT3</option>
+            <option value="4">ANT4</option>
+          </select>
+        </div>
+
+        <div class="field">
+          <label>Session</label>
+          <select id="session">
+            <option value="0" selected>S0</option>
+            <option value="1">S1</option>
+            <option value="2">S2</option>
+            <option value="3">S3</option>
+            <option value="255">AUTO1 / 0xFF</option>
+            <option value="254">AUTO2 / 0xFE</option>
+            <option value="253">AUTO3 / 0xFD</option>
+          </select>
+        </div>
+
+        <div class="field">
+          <label>Q value</label>
+          <input id="qvalue" type="number" min="0" max="15" value="4" />
+        </div>
+
+        <div class="field">
+          <label>ScanTime x100ms</label>
+          <input id="scantime" type="number" min="1" max="255" value="1" />
+        </div>
+
+        <div class="field">
+          <label>Loop delay ms</label>
+          <input id="delay" type="number" min="0" max="5000" value="0" />
+        </div>
+
+        <div class="buttons">
+          <button id="connectBtn">Connect</button>
+          <button id="disconnectBtn" class="secondary" disabled>Disconnect</button>
+          <button id="startBtn" disabled>Start</button>
+          <button id="stopBtn" class="danger" disabled>Stop</button>
+          <button id="clearBtn" class="secondary">Clear</button>
+        </div>
+
+        <div class="hint">Dùng Chrome hoặc Edge. Khi bấm Connect, chọn đúng COM của reader.</div>
+      </section>
+
+      <div class="main-panel">
+        <section>
+          <div class="panel-head">
+            <div class="panel-title">Antenna Power</div>
+            <div class="count" id="portInfo">-</div>
+          </div>
+          <div class="controls">
+            <div class="metrics">
+              <div class="metric"><div class="label">ANT1</div><div id="pwr1" class="value">-</div></div>
+              <div class="metric"><div class="label">ANT2</div><div id="pwr2" class="value">-</div></div>
+              <div class="metric"><div class="label">ANT3</div><div id="pwr3" class="value">-</div></div>
+              <div class="metric"><div class="label">ANT4</div><div id="pwr4" class="value">-</div></div>
+            </div>
+          </div>
+        </section>
+
+        <section>
+          <div class="panel-head">
+            <div class="panel-title">Reader Config</div>
+            <div class="count" id="readerInfo">-</div>
+          </div>
+          <div class="controls">
+            <div class="button-row">
+              <button id="getInfoBtn" class="secondary" disabled>Get Info</button>
+              <button id="getPowerBtn" class="secondary" disabled>Get Power</button>
+              <button id="getProfileBtn" class="secondary" disabled>Get Profile</button>
+              <button id="getFreqBtn" class="secondary" disabled>Get Frequency</button>
+            </div>
+
+            <div class="field">
+              <label>Enabled antennas</label>
+              <div class="check-row">
+                <label><input id="antEn1" type="checkbox" checked />ANT1</label>
+                <label><input id="antEn2" type="checkbox" checked />ANT2</label>
+                <label><input id="antEn3" type="checkbox" checked />ANT3</label>
+                <label><input id="antEn4" type="checkbox" checked />ANT4</label>
+                <label><input id="antPersist" type="checkbox" />save</label>
+              </div>
+            </div>
+
+            <div class="button-row">
+              <button id="setAntBtn" disabled>Set Antennas</button>
+            </div>
+
+            <div class="config-grid">
+              <div class="field">
+                <label>ANT1 power</label>
+                <input id="setPwr1" type="number" min="0" max="30" value="30" />
+              </div>
+              <div class="field">
+                <label>ANT2 power</label>
+                <input id="setPwr2" type="number" min="0" max="30" value="30" />
+              </div>
+              <div class="field">
+                <label>ANT3 power</label>
+                <input id="setPwr3" type="number" min="0" max="30" value="30" />
+              </div>
+              <div class="field">
+                <label>ANT4 power</label>
+                <input id="setPwr4" type="number" min="0" max="30" value="30" />
+              </div>
+            </div>
+
+            <div class="button-row">
+              <button id="setPowerBtn" disabled>Set Power</button>
+            </div>
+
+            <div class="config-grid">
+              <div class="field">
+                <label>Frequency band</label>
+                <select id="freqBand">
+                  <option value="2">US band / 902.75 + N*0.5</option>
+                  <option value="27" selected>Vietnam / 918.75 + N*0.5</option>
+                  <option value="23">Singapore / 920.25 + N*0.5</option>
+                  <option value="22">Thailand / 920.25 + N*0.5</option>
+                  <option value="4">EU / 865.1 + N*0.2</option>
+                  <option value="0">Full band / 840 + N*2</option>
+                </select>
+              </div>
+              <div class="field">
+                <label>Min channel N</label>
+                <input id="minFre" type="number" min="0" max="255" value="0" />
+              </div>
+              <div class="field">
+                <label>Max channel N</label>
+                <input id="maxFre" type="number" min="0" max="255" value="7" />
+              </div>
+              <div class="field">
+                <label>Frequency save</label>
+                <select id="freqSave">
+                  <option value="1" selected>not save</option>
+                  <option value="0">save</option>
+                </select>
+              </div>
+            </div>
+
+            <div class="button-row">
+              <button id="setFreqBtn" disabled>Set Frequency</button>
+            </div>
+
+            <div class="config-grid">
+              <div class="field">
+                <label>Profile</label>
+                <select id="profile">
+                  <option value="1">1 - 640kHz Miller2 Tari 7.5</option>
+                  <option value="3">3 - 320kHz Miller2 Tari 20</option>
+                  <option value="5">5 - 320kHz Miller4 Tari 20</option>
+                  <option value="7">7 - 250kHz Miller4 Tari 20</option>
+                  <option value="11">11 - 640kHz FM0 Tari 7.5</option>
+                  <option value="12">12 - 320kHz Miller2 Tari 15</option>
+                  <option value="13">13 - 160kHz Miller8 Tari 20</option>
+                  <option value="15">15 - 640kHz Miller4 Tari 7.5</option>
+                  <option value="53">53 - 640kHz Miller4 Tari 7.5</option>
+                  <option value="323">323 - 640kHz Miller2 Tari 7.5</option>
+                </select>
+              </div>
+              <div class="field">
+                <label>Profile save</label>
+                <select id="profileSave">
+                  <option value="2" selected>not save</option>
+                  <option value="1">save</option>
+                </select>
+              </div>
+            </div>
+
+            <div class="button-row">
+              <button id="setProfileBtn" disabled>Set Profile</button>
+            </div>
+
+            <div class="hint">Set config se dung command truc tiep cua reader. Neu dang Start, hay Stop truoc khi set.</div>
+          </div>
+        </section>
+
+        <section>
+          <div class="panel-head">
+            <div class="panel-title">Tags</div>
+            <div class="count"><span id="tagCount">0</span> EPC</div>
+          </div>
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>EPC</th>
+                  <th>Ant</th>
+                  <th>RSSI</th>
+                  <th>Reads</th>
+                  <th>Last Seen</th>
+                </tr>
+              </thead>
+              <tbody id="tagBody"></tbody>
+            </table>
+            <div id="empty" class="empty">Chưa có tag nào.</div>
+          </div>
+        </section>
+
+        <section>
+          <div class="panel-head">
+            <div class="panel-title">Write Tag</div>
+            <div class="count">EPC C1G2</div>
+          </div>
+          <div class="controls">
+            <div class="field">
+              <label>Target EPC</label>
+              <input id="writeTargetEpc" placeholder="Click a tag row or paste EPC hex" />
+            </div>
+
+            <div class="config-grid">
+              <div class="field">
+                <label>Access password</label>
+                <input id="writePwd" value="00000000" />
+              </div>
+              <div class="field">
+                <label>New EPC hex</label>
+                <input id="newEpcHex" placeholder="Example: 300833B2DDD9014000000001" />
+              </div>
+            </div>
+
+            <div class="button-row">
+              <button id="writeTargetEpcBtn" class="danger" disabled>Write EPC by Target</button>
+              <button id="writeEpcBtn" class="danger" disabled>Blind Write EPC</button>
+            </div>
+
+            <div class="hint">Target mode chon tag bang EPC cu roi ghi EPC moi. Blind mode khong chon target va chi nen dung khi chi co 1 tag trong vung anten.</div>
+          </div>
+        </section>
+
+        <section>
+          <div class="panel-head">
+            <div class="panel-title">Log</div>
+            <div class="count">TX/RX summary</div>
+          </div>
+          <div id="log" class="log"></div>
+        </section>
+      </div>
+    </main>
+  </div>
+
+  <script>
+    const CMD_SET_ANTENNA = 0x3f;
+    const CMD_INVENTORY = 0x01;
+    const CMD_WRITE_DATA = 0x03;
+    const CMD_WRITE_EPC = 0x04;
+    const CMD_GET_READER_INFO = 0x21;
+    const CMD_SET_FREQUENCY = 0x22;
+    const CMD_SET_RF_POWER = 0x2f;
+    const CMD_PROFILE = 0x7f;
+    const CMD_READ_ANTENNA_POWER = 0x94;
+    const CMD_READ_REGION = 0x9e;
+    const STATUS_TEXT = new Map([
+      [0x00, "OK"],
+      [0x01, "Inventory succeed"],
+      [0x02, "Inventory timeout"],
+      [0x03, "More data"],
+      [0x04, "Reader memory full"],
+      [0xf8, "Antenna error"]
+    ]);
+
+    let port = null;
+    let reader = null;
+    let readPumpActive = false;
+    let inventoryRunning = false;
+    let rxBuffer = [];
+    let pending = [];
+    let tags = new Map();
+
+    const el = (id) => document.getElementById(id);
+    const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+
+    function hex(bytes) {
+      return Array.from(bytes, (b) => b.toString(16).padStart(2, "0")).join(" ");
+    }
+
+    function log(line) {
+      const box = el("log");
+      const stamp = new Date().toLocaleTimeString();
+      box.textContent += `[${stamp}] ${line}\n`;
+      box.scrollTop = box.scrollHeight;
+    }
+
+    function setStatus(text, kind = "") {
+      el("statusText").textContent = text;
+      el("status").className = `status ${kind}`.trim();
+    }
+
+    function crc16(bytes) {
+      let value = 0xffff;
+      for (const byte of bytes) {
+        value ^= byte;
+        for (let i = 0; i < 8; i++) {
+          if (value & 0x0001) value = (value >> 1) ^ 0x8408;
+          else value >>= 1;
+          value &= 0xffff;
+        }
+      }
+      return value;
+    }
+
+    function buildCommand(address, command, data = []) {
+      const body = [data.length + 4, address, command, ...data];
+      const crc = crc16(body);
+      return new Uint8Array([...body, crc & 0xff, (crc >> 8) & 0xff]);
+    }
+
+    function parseFrame(raw) {
+      if (raw.length < 5) return null;
+      const expected = raw[raw.length - 2] | (raw[raw.length - 1] << 8);
+      const actual = crc16(raw.slice(0, -2));
+      if (actual !== expected) {
+        log(`Bad CRC RX=${hex(raw)} expected=${expected.toString(16)} actual=${actual.toString(16)}`);
+        return null;
+      }
+      return {
+        raw,
+        adr: raw[1],
+        recmd: raw[2],
+        status: raw[3],
+        data: raw.slice(4, -2)
+      };
+    }
+
+    function feedRx(bytes) {
+      rxBuffer.push(...bytes);
+      while (rxBuffer.length > 0) {
+        const length = rxBuffer[0];
+        if (length < 4) {
+          rxBuffer.shift();
+          continue;
+        }
+        const total = length + 1;
+        if (rxBuffer.length < total) return;
+        const raw = rxBuffer.splice(0, total);
+        const frame = parseFrame(raw);
+        if (frame) handleFrame(frame);
+      }
+    }
+
+    function resolvePending(frame) {
+      const index = pending.findIndex((p) => p.commands.has(frame.recmd));
+      if (index === -1) return false;
+      const [item] = pending.splice(index, 1);
+      clearTimeout(item.timer);
+      item.resolve(frame);
+      return true;
+    }
+
+    function handleFrame(frame) {
+      if (resolvePending(frame)) return;
+      if (frame.recmd === CMD_INVENTORY) {
+        handleInventoryFrame(frame);
+        return;
+      }
+      log(`RX other recmd=0x${frame.recmd.toString(16)} status=0x${frame.status.toString(16)} data=${hex(frame.data)}`);
+    }
+
+    async function sendCommand(command, data = [], responseCommands = [command], timeoutMs = 700) {
+      if (!port?.writable) throw new Error("Serial port is not writable");
+      const address = Number.parseInt(el("address").value);
+      const frame = buildCommand(address, command, data);
+      log(`OUT ${hex(frame)}`);
+
+      const promise = new Promise((resolve) => {
+        const timer = setTimeout(() => {
+          const index = pending.findIndex((p) => p.resolve === resolve);
+          if (index !== -1) pending.splice(index, 1);
+          resolve(null);
+        }, timeoutMs);
+        pending.push({ commands: new Set(responseCommands), resolve, timer });
+      });
+
+      const writer = port.writable.getWriter();
+      try {
+        await writer.write(frame);
+      } finally {
+        writer.releaseLock();
+      }
+      return promise;
+    }
+
+    async function readLoop() {
+      readPumpActive = true;
+      while (port?.readable && readPumpActive) {
+        reader = port.readable.getReader();
+        try {
+          while (readPumpActive) {
+            const { value, done } = await reader.read();
+            if (done) break;
+            if (value) feedRx(Array.from(value));
+          }
+        } catch (error) {
+          log(`Read error: ${error.message}`);
+        } finally {
+          reader.releaseLock();
+          reader = null;
+        }
+      }
+    }
+
+    function antList(value) {
+      const ants = [];
+      for (let i = 0; i < 8; i++) {
+        if (value & (1 << i)) ants.push(i + 1);
+      }
+      return ants.length ? ants : [value];
+    }
+
+    function parseEpcBlocks(data, start = 2) {
+      const out = [];
+      let pos = start;
+      while (pos < data.length) {
+        const lengthByte = data[pos++];
+        const epcLen = lengthByte & 0x3f;
+        if (pos + epcLen + 1 > data.length) break;
+        const epcBytes = data.slice(pos, pos + epcLen);
+        pos += epcLen;
+        const rssi = data[pos++];
+        out.push({ epc: hex(epcBytes).replaceAll(" ", "").toUpperCase(), rssiRaw: rssi, rssi });
+      }
+      return out;
+    }
+
+    function handleInventoryFrame(frame) {
+      const statusText = STATUS_TEXT.get(frame.status) || "Unknown";
+      if (frame.data.length < 2) {
+        log(`Inventory status=0x${frame.status.toString(16)} ${statusText} data=${hex(frame.data)}`);
+        return;
+      }
+
+      const antRaw = frame.data[0];
+      const num = frame.data[1];
+      if (num === 0) {
+        log(`Inventory ${statusText}; ANT raw=0x${antRaw.toString(16).padStart(2, "0")} Num=0`);
+        return;
+      }
+
+      for (const tag of parseEpcBlocks(frame.data)) {
+        const now = new Date();
+        const current = tags.get(tag.epc) || { epc: tag.epc, reads: 0 };
+        current.ant = antList(antRaw).map((x) => `ANT${x}`).join(",");
+        current.antRaw = antRaw;
+        current.rssi = tag.rssi;
+        current.rssiRaw = tag.rssiRaw;
+        current.reads += 1;
+        current.lastSeen = now;
+        tags.set(tag.epc, current);
+        log(`TAG epc=${tag.epc} ant=${current.ant} rssi=${tag.rssi}`);
+      }
+      renderTags();
+    }
+
+    function renderTags() {
+      const rows = Array.from(tags.values()).sort((a, b) => b.lastSeen - a.lastSeen);
+      el("tagCount").textContent = rows.length;
+      el("empty").style.display = rows.length ? "none" : "block";
+      el("tagBody").innerHTML = rows.map((tag) => `
+        <tr onclick="selectTagForWrite('${tag.epc}')">
+          <td class="epc">${tag.epc}</td>
+          <td>${tag.ant}</td>
+          <td>${tag.rssi} <span class="hint">0x${tag.rssiRaw.toString(16).padStart(2, "0").toUpperCase()}</span></td>
+          <td>${tag.reads}</td>
+          <td>${tag.lastSeen.toLocaleTimeString()}</td>
+        </tr>
+      `).join("");
+    }
+
+    function setConnectedControls(enabled) {
+      for (const id of [
+        "getInfoBtn", "getPowerBtn", "getProfileBtn", "getFreqBtn",
+        "setAntBtn", "setPowerBtn", "setFreqBtn", "setProfileBtn",
+        "writeTargetEpcBtn", "writeEpcBtn"
+      ]) {
+        el(id).disabled = !enabled;
+      }
+    }
+
+    function clampByte(value, min = 0, max = 255) {
+      const n = Number(value);
+      if (!Number.isFinite(n)) return min;
+      return Math.max(min, Math.min(max, Math.trunc(n)));
+    }
+
+    function formatAntMask(mask) {
+      return [1, 2, 3, 4]
+        .filter((ant) => mask & (1 << (ant - 1)))
+        .map((ant) => `ANT${ant}`)
+        .join(",") || "none";
+    }
+
+    function parseReaderInfoData(data) {
+      if (data.length < 11) return null;
+      return {
+        version: `${data[0]}.${data[1]}`,
+        type: data[2],
+        trType: data[3],
+        dmaxfre: data[4],
+        dminfre: data[5],
+        power: data[6],
+        inventoryTime: data[7],
+        ant: data[8],
+        checkAnt: data[10]
+      };
+    }
+
+    function syncAntennaChecks(mask) {
+      for (let i = 1; i <= 4; i++) {
+        el(`antEn${i}`).checked = Boolean(mask & (1 << (i - 1)));
+      }
+    }
+
+    function syncPowerInputs(powers) {
+      powers.slice(0, 4).forEach((power, i) => {
+        el(`setPwr${i + 1}`).value = power & 0x7f;
+      });
+    }
+
+    function antennaMaskFromUi() {
+      let mask = 0;
+      for (let i = 1; i <= 4; i++) {
+        if (el(`antEn${i}`).checked) mask |= 1 << (i - 1);
+      }
+      if (mask === 0) throw new Error("At least one antenna must be enabled");
+      if (!el("antPersist").checked) mask |= 0x80;
+      return mask;
+    }
+
+    function cleanHex(value) {
+      return String(value || "").replace(/[^0-9a-fA-F]/g, "").toUpperCase();
+    }
+
+    function hexToBytes(value, label = "hex") {
+      const text = cleanHex(value);
+      if (!text || text.length % 2 !== 0) throw new Error(`${label} must contain an even number of hex digits`);
+      const bytes = [];
+      for (let i = 0; i < text.length; i += 2) {
+        bytes.push(Number.parseInt(text.slice(i, i + 2), 16));
+      }
+      return bytes;
+    }
+
+    function passwordBytes() {
+      const bytes = hexToBytes(el("writePwd").value, "Access password");
+      if (bytes.length !== 4) throw new Error("Access password must be exactly 4 bytes / 8 hex digits");
+      return bytes;
+    }
+
+    function pcWordForEpc(epcBytes) {
+      const words = epcBytes.length / 2;
+      // EPC C1G2 PC word stores EPC length in words in the upper 5 bits.
+      // Keep XI/UMI/ISO/AFI bits clear for this basic writer.
+      return (words & 0x1f) << 11;
+    }
+
+    function selectTagForWrite(epc) {
+      el("writeTargetEpc").value = epc;
+      log(`Selected target EPC ${epc}`);
+    }
+
+    async function readPower() {
+      const frame = await sendCommand(CMD_READ_ANTENNA_POWER, [], [CMD_READ_ANTENNA_POWER, 0x51], 1000);
+      if (!frame) {
+        log("Read power: no response");
+        return;
+      }
+      if (frame.status !== 0x00) {
+        log(`Read power status=0x${frame.status.toString(16)}`);
+        return;
+      }
+      frame.data.slice(0, 4).forEach((power, i) => {
+        el(`pwr${i + 1}`).textContent = power;
+      });
+      syncPowerInputs(frame.data);
+    }
+
+    async function setupAntennas() {
+      const frame = await sendCommand(CMD_SET_ANTENNA, [0x8f], [CMD_SET_ANTENNA], 1000);
+      if (!frame) log("Setup ANT1..ANT4: no response");
+      else log(`Setup ANT1..ANT4 status=0x${frame.status.toString(16)}`);
+    }
+
+    async function getReaderInfo() {
+      const frame = await sendCommand(CMD_GET_READER_INFO, [], [CMD_GET_READER_INFO], 1000);
+      if (!frame) {
+        log("Get reader info: no response");
+        return null;
+      }
+      if (frame.status !== 0x00) {
+        log(`Get reader info status=0x${frame.status.toString(16)} data=${hex(frame.data)}`);
+        return null;
+      }
+
+      const info = parseReaderInfoData(frame.data);
+      if (!info) {
+        log(`Reader info unparsed data=${hex(frame.data)}`);
+        return null;
+      }
+
+      el("readerInfo").textContent = `FW ${info.version} - type ${info.type} - ${formatAntMask(info.ant)}`;
+      syncAntennaChecks(info.ant);
+      log(`Reader info FW=${info.version} type=${info.type} power=${info.power} ant=${formatAntMask(info.ant)} invTime=${info.inventoryTime}`);
+      return info;
+    }
+
+    async function setAntennasFromUi() {
+      const mask = antennaMaskFromUi();
+      const frame = await sendCommand(CMD_SET_ANTENNA, [mask], [CMD_SET_ANTENNA], 1000);
+      if (!frame) {
+        log("Set antennas: no response");
+        return;
+      }
+      log(`Set antennas ${formatAntMask(mask & 0x0f)} status=0x${frame.status.toString(16)}`);
+      if (frame.status === 0x00) await getReaderInfo();
+    }
+
+    async function setPowerFromUi() {
+      const payload = [1, 2, 3, 4].map((idx) => clampByte(el(`setPwr${idx}`).value, 0, 30) | 0x80);
+      const frame = await sendCommand(CMD_SET_RF_POWER, payload, [CMD_SET_RF_POWER], 1000);
+      if (!frame) {
+        log("Set power: no response");
+        return;
+      }
+      log(`Set power [${payload.map((x) => x & 0x7f).join(", ")}] status=0x${frame.status.toString(16)}`);
+      if (frame.status === 0x00) await readPower();
+    }
+
+    async function getFrequency() {
+      const frame = await sendCommand(CMD_READ_REGION, [], [CMD_READ_REGION], 1000);
+      if (!frame) {
+        log("Get frequency: no response");
+        return;
+      }
+      if (frame.status !== 0x00 || frame.data.length < 3) {
+        log(`Get frequency status=0x${frame.status.toString(16)} data=${hex(frame.data)}`);
+        return;
+      }
+      const [band, maxFre, minFre] = frame.data;
+      el("freqBand").value = String(band);
+      el("maxFre").value = maxFre;
+      el("minFre").value = minFre;
+      log(`Frequency band=${band} minN=${minFre} maxN=${maxFre}`);
+    }
+
+    async function setFrequencyFromUi() {
+      const flag = clampByte(el("freqSave").value, 0, 1);
+      const band = clampByte(el("freqBand").value, 0, 255);
+      const minFre = clampByte(el("minFre").value, 0, 255);
+      const maxFre = clampByte(el("maxFre").value, 0, 255);
+      if (maxFre < minFre) {
+        log("Set frequency skipped: Max channel must be >= Min channel");
+        return;
+      }
+      const frame = await sendCommand(CMD_SET_FREQUENCY, [flag, band, maxFre, minFre], [CMD_SET_FREQUENCY], 1000);
+      if (!frame) {
+        log("Set frequency: no response");
+        return;
+      }
+      log(`Set frequency band=${band} minN=${minFre} maxN=${maxFre} status=0x${frame.status.toString(16)}`);
+      if (frame.status === 0x00) await getFrequency();
+    }
+
+    async function getProfile() {
+      let frame = await sendCommand(CMD_PROFILE, [0x00, 0x00, 0x00], [CMD_PROFILE], 1000);
+      if (!frame || frame.status !== 0x00 || frame.data.length < 2) {
+        frame = await sendCommand(CMD_PROFILE, [0x00], [CMD_PROFILE], 1000);
+      }
+      if (!frame) {
+        log("Get profile: no response");
+        return;
+      }
+      if (frame.status !== 0x00) {
+        log(`Get profile status=0x${frame.status.toString(16)} data=${hex(frame.data)}`);
+        return;
+      }
+
+      let profile = 0;
+      if (frame.data.length >= 2) profile = (frame.data[0] << 8) | frame.data[1];
+      else if (frame.data.length === 1) profile = frame.data[0] & 0x7f;
+      el("profile").value = String(profile);
+      log(`Profile=${profile}`);
+    }
+
+    async function setProfileFromUi() {
+      const opt = clampByte(el("profileSave").value, 1, 2);
+      const profile = clampByte(el("profile").value, 0, 65535);
+      const frame = await sendCommand(CMD_PROFILE, [opt, (profile >> 8) & 0xff, profile & 0xff], [CMD_PROFILE], 1000);
+      if (!frame) {
+        log("Set profile: no response");
+        return;
+      }
+      log(`Set profile=${profile} opt=${opt} status=0x${frame.status.toString(16)}`);
+      if (frame.status === 0x00) await getProfile();
+    }
+
+    async function pauseInventoryForWrite() {
+      if (inventoryRunning) {
+        inventoryRunning = false;
+        await sleep(700);
+      }
+    }
+
+    async function useSelectedAntennaForWrite() {
+      const antenna = Number(el("antenna").value);
+      if (antenna === 1) {
+        log("Write antenna uses ANT1; skip antenna-select command for single-port compatibility");
+        return;
+      }
+      const mask = 0x80 | (1 << (antenna - 1));
+      const frame = await sendCommand(CMD_SET_ANTENNA, [mask], [CMD_SET_ANTENNA], 1000);
+      if (!frame || frame.status !== 0x00) {
+        throw new Error(`Cannot select ANT${antenna} for write`);
+      }
+      syncAntennaChecks(mask & 0x0f);
+      log(`Write antenna set to ANT${antenna} only`);
+      await sleep(250);
+    }
+
+    async function writeEpcFromUi() {
+      await pauseInventoryForWrite();
+      await useSelectedAntennaForWrite();
+      const newEpc = hexToBytes(el("newEpcHex").value, "New EPC");
+      if (newEpc.length < 2 || newEpc.length > 30 || newEpc.length % 2 !== 0) {
+        throw new Error("New EPC length must be 1..15 words, even number of bytes");
+      }
+      const eNum = newEpc.length / 2;
+      const pwd = passwordBytes();
+      if (!confirm("Write EPC changes the tag EPC. Continue?")) return;
+
+      const frame = await sendCommand(CMD_WRITE_EPC, [eNum, ...pwd, ...newEpc], [CMD_WRITE_EPC], 10000);
+      if (!frame) {
+        log("Write EPC: no response");
+        return;
+      }
+      log(`Write EPC status=0x${frame.status.toString(16)} newEpc=${cleanHex(el("newEpcHex").value)}`);
+    }
+
+    async function writeTargetEpcFromUi() {
+      await pauseInventoryForWrite();
+      await useSelectedAntennaForWrite();
+      const targetEpc = hexToBytes(el("writeTargetEpc").value, "Target EPC");
+      const newEpc = hexToBytes(el("newEpcHex").value, "New EPC");
+      if (targetEpc.length < 2 || targetEpc.length > 30 || targetEpc.length % 2 !== 0) {
+        throw new Error("Target EPC length must be 1..15 words, even number of bytes");
+      }
+      if (newEpc.length < 2 || newEpc.length > 64 || newEpc.length % 2 !== 0) {
+        throw new Error("New EPC length must be 1..32 words, even number of bytes");
+      }
+
+      const pc = pcWordForEpc(newEpc);
+      const pcBytes = [(pc >> 8) & 0xff, pc & 0xff];
+      const wordsToWrite = [...pcBytes, ...newEpc];
+      const wNum = wordsToWrite.length / 2;
+      const eNum = targetEpc.length / 2;
+      const pwd = passwordBytes();
+      if (!confirm("Write PC word + new EPC to the selected target EPC using command 0x03?")) return;
+
+      // G2 Write Data 0x03, target by full old EPC, write EPC memory from WordPtr=1.
+      // Word 1 is PC, Word 2+ are EPC. This supports changing EPC length.
+      const payload = [wNum, eNum, ...targetEpc, 0x01, 0x01, ...wordsToWrite, ...pwd];
+      const frame = await sendCommand(CMD_WRITE_DATA, payload, [CMD_WRITE_DATA], 10000);
+      if (!frame) {
+        log("Write EPC by target: no response");
+        return;
+      }
+      log(`Write EPC by target status=0x${frame.status.toString(16)} pc=0x${pc.toString(16).padStart(4, "0")} old=${cleanHex(el("writeTargetEpc").value)} new=${cleanHex(el("newEpcHex").value)}`);
+    }
+
+
+    function inventoryPayload() {
+      const q = Math.max(0, Math.min(15, Number(el("qvalue").value) || 4));
+      const session = Number(el("session").value);
+      const target = 0;
+      const antenna = Number(el("antenna").value);
+      const antennaCode = 0x80 + (antenna - 1);
+      const scantime = Math.max(1, Math.min(255, Number(el("scantime").value) || 1));
+      return [q, session, target, antennaCode, scantime];
+    }
+
+    async function inventoryLoop() {
+      inventoryRunning = true;
+      setStatus("Đang inventory", "running");
+      el("startBtn").disabled = true;
+      el("stopBtn").disabled = false;
+
+      while (inventoryRunning) {
+        const frame = await sendCommand(CMD_INVENTORY, inventoryPayload(), [CMD_INVENTORY], 500);
+        if (frame) handleInventoryFrame(frame);
+        else log("Inventory: no response");
+
+        const delay = Math.max(0, Number(el("delay").value) || 0);
+        if (delay) await sleep(delay);
+      }
+
+      setStatus("Đã kết nối", "connected");
+      el("startBtn").disabled = false;
+      el("stopBtn").disabled = true;
+    }
+
+    async function connect() {
+      if (!("serial" in navigator)) {
+        alert("Trình duyệt này chưa hỗ trợ Web Serial. Hãy dùng Chrome hoặc Edge.");
+        return;
+      }
+
+      port = await navigator.serial.requestPort();
+      await port.open({ baudRate: Number(el("baud").value) });
+      el("connectBtn").disabled = true;
+      el("disconnectBtn").disabled = false;
+      el("startBtn").disabled = false;
+      setConnectedControls(true);
+      el("portInfo").textContent = `${el("baud").value} baud`;
+      setStatus("Đã kết nối", "connected");
+      readLoop();
+      await readPower();
+      await setupAntennas();
+      await getReaderInfo();
+      await getFrequency();
+      await getProfile();
+    }
+
+    async function disconnect() {
+      inventoryRunning = false;
+      readPumpActive = false;
+      if (reader) await reader.cancel();
+      if (port) {
+        await port.close();
+        port = null;
+      }
+      el("connectBtn").disabled = false;
+      el("disconnectBtn").disabled = true;
+      el("startBtn").disabled = true;
+      el("stopBtn").disabled = true;
+      setConnectedControls(false);
+      setStatus("Chưa kết nối");
+    }
+
+    el("connectBtn").addEventListener("click", () => connect().catch((e) => log(`Connect error: ${e.message}`)));
+    el("disconnectBtn").addEventListener("click", () => disconnect().catch((e) => log(`Disconnect error: ${e.message}`)));
+    el("startBtn").addEventListener("click", () => inventoryLoop().catch((e) => log(`Start error: ${e.message}`)));
+    el("stopBtn").addEventListener("click", () => { inventoryRunning = false; });
+    el("getInfoBtn").addEventListener("click", () => getReaderInfo().catch((e) => log(`Get info error: ${e.message}`)));
+    el("getPowerBtn").addEventListener("click", () => readPower().catch((e) => log(`Get power error: ${e.message}`)));
+    el("getProfileBtn").addEventListener("click", () => getProfile().catch((e) => log(`Get profile error: ${e.message}`)));
+    el("getFreqBtn").addEventListener("click", () => getFrequency().catch((e) => log(`Get frequency error: ${e.message}`)));
+    el("setAntBtn").addEventListener("click", () => setAntennasFromUi().catch((e) => log(`Set antennas error: ${e.message}`)));
+    el("setPowerBtn").addEventListener("click", () => setPowerFromUi().catch((e) => log(`Set power error: ${e.message}`)));
+    el("setFreqBtn").addEventListener("click", () => setFrequencyFromUi().catch((e) => log(`Set frequency error: ${e.message}`)));
+    el("setProfileBtn").addEventListener("click", () => setProfileFromUi().catch((e) => log(`Set profile error: ${e.message}`)));
+    el("writeTargetEpcBtn").addEventListener("click", () => writeTargetEpcFromUi().catch((e) => log(`Write EPC by target error: ${e.message}`)));
+    el("writeEpcBtn").addEventListener("click", () => writeEpcFromUi().catch((e) => log(`Write EPC error: ${e.message}`)));
+    el("clearBtn").addEventListener("click", () => {
+      tags.clear();
+      renderTags();
+      el("log").textContent = "";
+    });
+  </script>
+</body>
+</html>
