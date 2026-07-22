@@ -1,5 +1,5 @@
 {
-  "name": "@nextwaves/nrn-sdk",
+  "name": "@upsidebn/nrn-sdk",
   "version": "1.0.0",
   "description": "TypeScript Web Serial SDK for Nextwaves NRN RFID readers.",
   "license": "MIT",
@@ -33,7 +33,7 @@
   "homepage": "https://github.com/Nextwaves-Industries/nextwaves-sdk#readme",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/Nextwaves-Industries/nextwaves-sdk.git"
+    "url": "https://github.com/upsidebn/upsidebn.sdk.git"
   },
   "bugs": {
     "url": "https://github.com/Nextwaves-Industries/nextwaves-sdk/issues"
