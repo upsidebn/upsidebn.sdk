@@ -27,22 +27,5 @@ Multi-language SDK for NRN RFID readers.
 
 ```go
 import nrn "[github.com/upsidebn/upsidebn.sdk/sdk/nation/go](https://github.com/upsidebn/upsidebn.sdk/sdk/nation/go)"
-
-##CMake
-
-include(FetchContent)
-
-FetchContent_Declare(
-  nrn_sdk
-  GIT_REPOSITORY [https://github.com/upsidebn/upsidebn.sdk.git](https://github.com/upsidebn/upsidebn.sdk.git)
-  GIT_TAG v1.0.0
-  SOURCE_SUBDIR sdk/nation/cpp
-)
-
-FetchContent_MakeAvailable(nrn_sdk)
-
-target_link_libraries(your_target PRIVATE nrn-sdk)
-
-##Inquiry
 - inquiry@upsidebn.com
 - upsidebn.com
