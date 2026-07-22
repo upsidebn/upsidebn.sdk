@@ -1,4 +1,4 @@
-module github.com/Nextwaves-Industries/nextwaves-sdk/sdk/nation/go
+module github.com/upsidebn/upsidebn.sdk/sdk/nation/go
 
 go 1.21
 
