@@ -33,6 +33,7 @@ import nrn "[github.com/upsidebn/upsidebn.sdk/sdk/nation/go](https://github.com/
 
 ## CMake
 
+```go
 include(FetchContent)
 
 FetchContent_Declare(
@@ -45,6 +46,7 @@ FetchContent_Declare(
 FetchContent_MakeAvailable(nrn_sdk)
 
 target_link_libraries(your_target PRIVATE nrn-sdk)
+```
 
 ## Support
 
@@ -55,3 +57,4 @@ target_link_libraries(your_target PRIVATE nrn-sdk)
 
 This repository is MIT-licensed for code under /sdk/nation/ and /examples/.
 /legacy/ and /driver/ retain their own provenance and licensing.
+
