@@ -1,4 +1,4 @@
-# Nextwaves NRN RFID Reader SDK
+# UpsideBN NRN RFID Reader SDK
 
 Multi-language SDK for Nextwaves NRN RFID readers.
 
